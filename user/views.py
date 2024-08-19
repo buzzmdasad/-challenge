@@ -19,9 +19,15 @@ class RecruiterSignupView(APIView):
             return Response({'message':message}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class SeekerSignupView(generics.CreateAPIView):
-    queryset = UserDetails.objects.all()
-    serializer_class = UserSerializer
+class SeekerSignupView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        print(request.data)
+        if serializer.is_valid():
+            serializer.save()
+            message='Your account has been created successfully'
+            return Response({'message':message}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(ObtainAuthToken):
     serializer_class = AuthTokenSerializer

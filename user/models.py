@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
-
+from user.validators import UserDetailsValidator
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -22,17 +22,12 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class UserDetails(AbstractBaseUser):
-    GENDER_CHOICES = [
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('O', 'Other'),
-    ]
 
-    email = models.EmailField(unique=True)
-    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255,unique=True,validators=[UserDetailsValidator.validate_email])
+    name = models.CharField(max_length=255, validators=[UserDetailsValidator.validate_name])
     date_of_birth = models.DateField()
     gender = models.CharField(max_length=10,null=True, blank=True)
-    mobile_number = models.CharField(max_length=10)
+    mobile_number = models.CharField(max_length=10,validators=[UserDetailsValidator.validate_phone_number])
     address = models.TextField()
     password = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
@@ -51,6 +46,7 @@ class UserDetails(AbstractBaseUser):
     company = models.CharField(max_length=255,null=True, blank=True)
     location = models.CharField(max_length=255,null=True, blank=True)
     worked_from = models.DateField(null=True, blank=True)
+    to = models.DateField(null=True, blank=True)
     about_company = models.TextField(null=True, blank=True)
     website = models.URLField(null=True, blank=True)
 

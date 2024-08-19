@@ -17,9 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from user.views import (
-    RecruiterSignupView,
+    RecruiterSignupView,SeekerSignupView,LoginView
 )
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('recruiter/signup/', RecruiterSignupView.as_view(), name='recruiter-signup'),
+    path('seeker/signup/', SeekerSignupView.as_view(), name='seeker-signup'),
+    path('login/', LoginView.as_view(), name='login'),
 ]
