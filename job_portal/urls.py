@@ -16,12 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from drf_spectacular.views import (
+    SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView,
+    )
 from user.views import (
-    RecruiterSignupView,SeekerSignupView,LoginView
+    RecruiterSignupView,SeekerSignupView,LoginView,RecruiterProfileView,LogoutView,SeekerProfileView,CreateTokenView,ManageUserView,
 )
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('recruiter/signup/', RecruiterSignupView.as_view(), name='recruiter-signup'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('recruiter/signup/', ManageUserView.as_view(), name='recruiter-signup'),
     path('seeker/signup/', SeekerSignupView.as_view(), name='seeker-signup'),
     path('login/', LoginView.as_view(), name='login'),
+    path('recruiterprofile/', RecruiterProfileView.as_view(), name='recruiterprofile'),
+    path('seekerprofile/', ManageUserView.as_view(), name='seekerprofile'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('token/', CreateTokenView.as_view(), name='token'),
 ]
