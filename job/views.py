@@ -1,87 +1,210 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, authentication, permissions, status
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+from rest_framework.settings import api_settings
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.views import APIView
-from .models import JobDetails, ApplicantDetails
-from .serializers import JobSerializer, ApplicantSerializer
-from user.models import UserDetails
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authtoken.models import Token
+from job.models import  JobDetails, ApplicantDetails
+from job.serializers import  JobSerializer, ApplicantSerializer
+from django.contrib.auth import get_user_model, authenticate
+from user.models import UserDetails
+from user.serializers import UserSerializer
 
-class JobPostView(generics.CreateAPIView):
+
+
+
+
+# Method to post a job
+# className ---> JobPostView
+class PostJobView(APIView):
+    permission_classes = [IsAuthenticated]
     queryset = JobDetails.objects.all()
     serializer_class = JobSerializer
+    def post(self, request):
+        print(request.user)
+        if not request.user.is_staff:
+            return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        serializer = JobSerializer(data=request.data)
+        if serializer.is_valid():
+            job = serializer.save(recruiter=request.user)
+            return Response({'message': 'job details have been posted successfully'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# Method to view the recruiter job posts
+# className --->  MyPostsView
+class MyPostsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(recruiter=self.request.user)
+    def get(self, request):
+        if not request.user.is_staff:
+            return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        jobs = JobDetails.objects.filter(recruiter=request.user)
+        serializer = JobSerializer(jobs, many=True)
+        return Response(serializer.data)
 
-class MyPostsView(generics.ListAPIView):
-    serializer_class = JobSerializer
+
+# Method to view the job status
+# className --->  JobStatusView
+class JobStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return JobDetails.objects.filter(recruiter=self.request.user)
+    def get(self, request, job_id):
+        if not request.user.is_staff:
+            return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            job = JobDetails.objects.get(id=job_id, recruiter=request.user)
+        except JobDetails.DoesNotExist:
+            return Response({'message': 'You do not have permission to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        applicants = ApplicantDetails.objects.filter(job=job)
+        data = {
+            'job_id': job.id,
+            'job_title': job.job_title,
+            'company': job.company,
+            'applicants': [{'applicant_id': app.applicant.id, 'applicant_name': app.applicant.name, 'applicant_email': app.applicant.email} for app in applicants]
+        }
+        return Response(data)
 
-class JobStatusView(generics.RetrieveAPIView):
-    queryset = JobDetails.objects.all()
-    serializer_class = JobSerializer
+
+# Method to view seeker profile
+# className --->  ViewProfileView
+
+class ViewProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return JobDetails.objects.filter(recruiter=self.request.user)
+    def get(self, request, applicant_id):
+        if not request.user.is_staff:
+            return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            applicant = UserDetails.objects.get(id=applicant_id)
+        except JobDetails.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UserSerializer(applicant)
+        return Response(serializer.data)
 
-class ViewProfileView(generics.RetrieveAPIView):
-    queryset = UserDetails.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return UserDetails.objects.filter(id=self.kwargs['applicant_id'])
-
+# Method to update and delete a job
+# className --->  JobUpdateDeleteView
+# Create a permission to allow recruiters to edit only their own job post details
 class JobUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     queryset = JobDetails.objects.all()
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated]
+    def patch(self, request, pk):
+        # Check if the user is not a staff member (or not a recruiter if you have that distinction)
+        if not request.user.is_staff:
+            return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
 
-    def get_queryset(self):
-        return JobDetails.objects.filter(recruiter=self.request.user)
+        try:
+            job = JobDetails.objects.get(id=job_id)
+        except JobDetails.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-class JobListView(generics.ListAPIView):
-    queryset = JobDetails.objects.all()
-    serializer_class = JobSerializer
+        serializer = JobDetailsSerializer(job, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def put(self, request, pk):
+        if not request.user.is_staff:
+            return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            job = JobDetails.objects.get(id=pk, recruiter=request.user)
+        except JobDetails.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = JobSerializer(job, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'job details have been updated successfully'})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class JobFiltersView(generics.ListAPIView):
-    serializer_class = JobSerializer
+    def delete(self, request, pk):
+        if not request.user.is_staff:
+            return Response({'detail': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            job = JobDetails.objects.get(id=pk, recruiter=request.user)
+        except JobDetails.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        job.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def get_queryset(self):
-        queryset = JobDetails.objects.all()
-        job_title = self.request.query_params.get('job_title', None)
-        work_location = self.request.query_params.get('work_location', None)
-        company = self.request.query_params.get('company', None)
-        description = self.request.query_params.get('description', None)
-        if job_title:
-            queryset = queryset.filter(job_title__icontains=job_title)
-        if work_location:
-            queryset = queryset.filter(work_location__icontains=work_location)
-        if company:
-            queryset = queryset.filter(company__icontains=company)
-        if description:
-            queryset = queryset.filter(description__icontains=description)
-        return queryset
 
-class JobApplyView(generics.CreateAPIView):
+# Method to list all the jobs
+# className --->  JobListView
+
+class ListJobView(APIView):
+    def get(self, request):
+        jobs = JobDetails.objects.all()
+        serializer = JobSerializer(jobs, many=True)
+        return Response(serializer.data)
+
+# Method to filter jobs
+# className --->  JobFiltersView
+class FilterJobView(APIView):
+    def get(self, request):
+        search_query = request.query_params.get('search', '')
+        jobs = JobDetails.objects.filter(
+            models.Q(job_title__icontains=search_query) |
+            models.Q(work_location__icontains=search_query) |
+            models.Q(company__icontains=search_query) |
+            models.Q(description__icontains=search_query)
+        )
+        serializer = JobSerializer(jobs, many=True)
+        return Response(serializer.data)
+
+
+# Method to apply for a job
+# className --->  JobApplyView
+
+class ApplyJobView(APIView):
+    permission_classes = [IsAuthenticated]
     queryset = ApplicantDetails.objects.all()
     serializer_class = ApplicantSerializer
+    def post(self, request):
+        if request.user.is_staff:
+            return Response({'message': 'You need seeker privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        job_id = request.data.get('job_id')
+        try:
+            job = JobDetails.objects.get(id=job_id)
+        except JobDetails.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        applicant, created = ApplicantDetails.objects.get_or_create(
+            job=job,
+            applicant=request.user,
+            defaults={
+                'job_title': job.job_title,
+                'company': job.company,
+                'applicant_name': request.user.name,
+                'applicant_email': request.user.email
+            }
+        )
+        if created:
+            job.no_of_applicants += 1
+            job.save()
+            return Response({'message': 'You have successfully applied for this job'})
+        return Response({'message': 'You have already applied for this job'},status=status.HTTP_406_NOT_ACCEPTABLE)
+
+# Method to view seeker applied jobs
+# className --->  JobAppliedView
+
+class AppliedJobsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        job = JobDetails.objects.get(id=self.request.data.get('job_id'))
-        if not job:
-            return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
-        serializer.save(applicant=self.request.user, job_title=job.job_title, company=job.company)
-
-class JobAppliedView(generics.ListAPIView):
-    serializer_class = ApplicantSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return ApplicantDetails.objects.filter(applicant=self.request.user)
+    def get(self, request):
+        if request.user.is_staff:
+            return Response({'message': 'You need seeker privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        applications = ApplicantDetails.objects.filter(applicant=request.user)
+        data = [
+            {
+                'job_id': app.job.id,
+                'job_title': app.job.job_title,
+                'company': app.job.company,
+                'applicant_id': app.applicant.id,
+                'applicant_name': app.applicant.name,
+                'applicant_email': app.applicant.email
+            }
+            for app in applications
+        ]
+        return Response(data)

@@ -52,7 +52,8 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def validate_mobile_number(self, value):
-        if not re.match(r'^[789]\d{9}$', value):
+        value_str = str(value)
+        if not re.match(r'^[789]\d{9}$', value_str):
             raise serializers.ValidationError('Enter a valid number')
         return value
 
@@ -80,6 +81,10 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Remove keys with None values
+        return {key: value for key, value in representation.items() if value is not None}
 
         #return UserDetails.objects.create_user(self,email, password, **validated_data)
 class AuthTokenSerializer(serializers.Serializer):

@@ -22,13 +22,17 @@ class RecruiterSignupView(APIView):
     serializer_class = UserSerializer
     def post(self, request):
         serializer = UserSerializer(data=request.data)
+        print(request.data)
         if serializer.is_valid():
+            serializer.validated_data['is_staff'] = True
             serializer.save()
             message='Your account has been created successfully'
             return Response({'message':message}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class SeekerSignupView(APIView):
+    queryset = UserDetails.objects.all()
+    serializer_class = UserSerializer
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         print(request.data)
@@ -59,7 +63,7 @@ class LoginView(ObtainAuthToken):
 
 
 
-class RecruiterProfileView(generics.RetrieveDestroyAPIView):
+class RecruiterProfileView(generics.RetrieveUpdateDestroyAPIView):
     queryset = UserDetails.objects.all()
     serializer_class = UserSerializer
     authentication_classes=[authentication.TokenAuthentication]
@@ -79,15 +83,22 @@ class RecruiterProfileView(generics.RetrieveDestroyAPIView):
 class SeekerProfileView(generics.RetrieveUpdateDestroyAPIView):
     queryset = UserDetails.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    authentication_classes=[authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return UserDetails.objects.filter(id=self.request.user.id)
+    def get_object(self):
+        return UserDetails.objects.get(id=self.request.user.id)
+    def get(self, request, *args, **kwargs):
+        # Overriding to handle the response with authentication check
+        if not request.user.is_authenticated:
+            print('FROM Seekeer Profile view')
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().get(request, *args, **kwargs)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def get(self, request):
         request.user.auth_token.delete()
         return Response({"message": "You've been logged out successfully"})
 
@@ -101,11 +112,11 @@ class ManageUserView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class=UserSerializer
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
-    def get_queryset(self):
-        # For example, filter based on the current authenticated user
-
-        user = self.request.user
-        return UserDetails.objects.filter(email=self.request.user.email)
+    # def get_queryset(self):
+    #     # For example, filter based on the current authenticated user
+    #
+    #     user = self.request.user
+    #     return UserDetails.objects.filter(email=self.request.user.id)
 def get_object(self):
     """Retrieve and return authenticated user"""
     return self.request.user
