@@ -73,13 +73,13 @@ class JobStatusView(APIView):
 
 class ViewProfileView(APIView):
     permission_classes = [IsAuthenticated]
-
+    serializer_class = UserSerializer
     def get(self, request, applicant_id):
         if not request.user.is_staff:
             return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
         try:
             applicant = UserDetails.objects.get(id=applicant_id)
-        except JobDetails.DoesNotExist:
+        except UserDetails.DoesNotExist:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
         serializer = UserSerializer(applicant)
         return Response(serializer.data)
@@ -89,20 +89,21 @@ class ViewProfileView(APIView):
 # className --->  JobUpdateDeleteView
 # Create a permission to allow recruiters to edit only their own job post details
 class JobUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = JobDetails.objects.all()
     serializer_class = JobSerializer
-    permission_classes = [IsAuthenticated]
+
     def patch(self, request, pk):
         # Check if the user is not a staff member (or not a recruiter if you have that distinction)
         if not request.user.is_staff:
             return Response({'message': 'You need recruiter privileges to perform this action'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            job = JobDetails.objects.get(id=job_id)
+            job = JobDetails.objects.get(id=pk)
         except JobDetails.DoesNotExist:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = JobDetailsSerializer(job, data=request.data, partial=True)
+        serializer = JobSerializer(job, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -207,4 +208,5 @@ class AppliedJobsView(APIView):
             }
             for app in applications
         ]
+
         return Response(data)

@@ -15,7 +15,8 @@ from django.utils.translation import gettext as _
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model =UserDetails
-        fields = ['name', 'designation', 'company', 'email', 'date_of_birth', 'gender', 'mobile_number', 'about_company', 'website', 'password','course','specialization','course_type','college','percentage','year_of_passing','skills','summary','experience_level','designation','responsibilities','company','location','worked_from','to']
+        fields = ['name','email', 'designation' , 'date_of_birth', 'gender', 'mobile_number', 'address','course_type','college','percentage','year_of_passing','skills','summary','experience_level','responsibilities','company','location','worked_from','to','about_company','website', 'password','course','specialization',]
+        #fields = '__all__'
         error_messages = {
             'email': {
                 'invalid': 'Enter a valid email',  # Custom error message
@@ -81,12 +82,25 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        # Remove keys with None values
-        return {key: value for key, value in representation.items() if value is not None}
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     # Remove keys with None values
+    #     return {key: value for key, value in representation.items() if value is not None}
 
         #return UserDetails.objects.create_user(self,email, password, **validated_data)
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # Create a new dictionary to hold filtered fields
+        filtered_representation = {}
+
+        # Iterate over the original representation
+        for key, value in representation.items():
+            if value is not None:  # Include fields with `None` values
+                filtered_representation[key] = value
+            # Optionally handle other cases if needed
+
+        return filtered_representation
 class AuthTokenSerializer(serializers.Serializer):
     email = serializers.CharField()
     password = serializers.CharField(style={'input_type': 'password'}, trim_whitespace=False)

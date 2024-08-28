@@ -11,10 +11,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        return self.create_user(email, password, **extra_fields)
+
 
     def create_admin(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
@@ -45,8 +42,8 @@ class UserDetails(AbstractBaseUser):
     responsibilities = models.CharField(max_length=255,null=True, blank=True)
     company = models.CharField(max_length=255,null=True, blank=True)
     location = models.CharField(max_length=255,null=True, blank=True)
-    worked_from = models.DateField(null=True, blank=True)
-    to = models.DateField(null=True, blank=True)
+    worked_from = models.DateField(null=True, blank=True,default=None)
+    to = models.DateField(null=True, blank=True,default=None)
     about_company = models.TextField(null=True, blank=True)
     website = models.URLField(null=True, blank=True)
 

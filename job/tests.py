@@ -8,7 +8,6 @@ from django.contrib.auth import get_user_model
 
 
 def create_admin(**params):
-    print(type(get_user_model().objects))
     return get_user_model().objects.create_admin(**params)
 
 
@@ -493,6 +492,10 @@ class JobTestCase(APITestCase):
 
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
         response = self.client.get('/jobstatus/1')
+        print('@@@' + str(response.status_code))
+
+        if response.status_code == 301:
+            print('Redirect Location:', response['Location'])
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         response_content = response.content.decode('utf-8')
         self.assertJSONEqual(response_content, {"message":"You need recruiter privileges to perform this action"})

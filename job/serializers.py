@@ -11,7 +11,7 @@ class ApplicantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicantDetails
         fields = ['id', 'job_id', 'job_title', 'company', 'applicant_id', 'applicant_name', 'applicant_email']
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        # Remove keys with None values
-        return {key: value for key, value in representation.items() if value is not None}
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     # Remove keys with None values
+    #     return {key: value for key, value in representation.items() if value is not None}
