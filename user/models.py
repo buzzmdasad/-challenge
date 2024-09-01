@@ -42,8 +42,8 @@ class UserDetails(AbstractBaseUser):
     responsibilities = models.CharField(max_length=255,null=True, blank=True)
     company = models.CharField(max_length=255,null=True, blank=True)
     location = models.CharField(max_length=255,null=True, blank=True)
-    worked_from = models.DateField(null=True, blank=True,default=None)
-    to = models.DateField(null=True, blank=True,default=None)
+    worked_from = models.DateField(null=True, default=None)
+    to = models.DateField(null=True,default=None)
     about_company = models.TextField(null=True, blank=True)
     website = models.URLField(null=True, blank=True)
 

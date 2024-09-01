@@ -9,14 +9,14 @@ class UserDetailsValidator:
     @staticmethod
     def validate_name(value):
         if not value.isalpha() or len(value) < 4:
-            message='Enter a valid name'
+            #message='Enter a valid name'
             raise ValidationError(
                 _('Enter a valid name'), code='invalid'
             )
     @staticmethod
     def validate_password(value):
         if len(value)<5:
-            message:'Enter a valid password'
+            #message:'Enter a valid password'
             raise ValidationError(_
                 ('Enter a valid password'), code='invalid'
             )

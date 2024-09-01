@@ -7,6 +7,7 @@ from .models import UserDetails
 from .serializers import (
     UserSerializer,
     AuthTokenSerializer,
+    RecruiterSerializer,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -19,9 +20,9 @@ from user.permissions import UpdateOwnProfile
 
 class RecruiterSignupView(APIView):
     queryset = UserDetails.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = RecruiterSerializer
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
+        serializer = RecruiterSerializer(data=request.data)
         print(request.data)
         if serializer.is_valid():
             serializer.validated_data['is_staff'] = True
@@ -37,6 +38,7 @@ class SeekerSignupView(APIView):
         serializer = UserSerializer(data=request.data)
         print(request.data)
         if serializer.is_valid():
+            serializer.validated_data['is_staff'] = False
             serializer.save()
             message='Your account has been created successfully'
             return Response({'message':message}, status=status.HTTP_201_CREATED)
@@ -65,7 +67,7 @@ class LoginView(ObtainAuthToken):
 
 class RecruiterProfileView(generics.RetrieveUpdateDestroyAPIView):
     queryset = UserDetails.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = RecruiterSerializer
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
 

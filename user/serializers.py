@@ -15,7 +15,92 @@ from django.utils.translation import gettext as _
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model =UserDetails
-        fields = ['name','email', 'designation' , 'date_of_birth', 'gender', 'mobile_number', 'address','course_type','college','percentage','year_of_passing','skills','summary','experience_level','responsibilities','company','location','worked_from','to','about_company','website', 'password','course','specialization',]
+        fields = [
+            'email', 'name', 'date_of_birth', 'gender', 'mobile_number',
+            'address', 'password', 'course', 'specialization', 'course_type',
+            'college', 'percentage', 'year_of_passing', 'skills', 'summary',
+            'experience_level', 'designation', 'responsibilities', 'company',
+            'location', 'worked_from', 'to'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True}
+            }
+        error_messages = {
+            'email': {
+                'invalid': 'Enter a valid email',  # Custom error message
+            }
+        }
+        extra_kwargs = {
+            'email': {
+                'validators': [
+
+                    UniqueValidator(
+                       queryset=UserDetails.objects.all(),
+                       message="user details with this email already exists."
+                    )
+                ]
+            },'mobile_number': {
+                'validators': [
+
+                    UniqueValidator(
+                       queryset=UserDetails.objects.all(),
+                       message="user details with this mobile number already exists."
+                    )
+                ]
+            },
+            'password':{'write_only':True},
+        }
+    def validate_email(self, value):
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
+            raise serializers.ValidationError('Enter a valid email')
+        return value
+
+    def validate_name(self, value):
+        if not value.isalpha() or len(value) < 4:
+            raise serializers.ValidationError('Enter a valid name')
+        return value
+
+    def validate_mobile_number(self, value):
+        value_str = str(value)
+        if not re.match(r'^[789]\d{9}$', value_str):
+            raise serializers.ValidationError('Enter a valid number')
+        return value
+
+    def validate_password(self,value):
+        if len(value)<5:
+            message:'Enter a valid password'
+            raise ValidationError(message,code='invalid')
+        return value
+    def create(self,validated_data):
+        """craete an return a user"""
+        email = validated_data.get('email')
+        password = validated_data.pop('password', None)
+        user = UserDetails(**validated_data)
+        if password:
+            user.set_password(password)
+        user.save()
+
+        return user
+    def update(self,instance,validated_data):
+        """Update and return user"""
+        password=validated_data.pop('password',None)
+        user=super().update(instance,validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+
+        return user
+
+class RecruiterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =UserDetails
+        fields = [
+            'email', 'name', 'date_of_birth', 'gender', 'mobile_number',
+            'designation', 'company', 'about_company', 'website', 'password'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
         #fields = '__all__'
         error_messages = {
             'email': {
@@ -82,25 +167,7 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
-    # def to_representation(self, instance):
-    #     representation = super().to_representation(instance)
-    #     # Remove keys with None values
-    #     return {key: value for key, value in representation.items() if value is not None}
 
-        #return UserDetails.objects.create_user(self,email, password, **validated_data)
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-
-        # Create a new dictionary to hold filtered fields
-        filtered_representation = {}
-
-        # Iterate over the original representation
-        for key, value in representation.items():
-            if value is not None:  # Include fields with `None` values
-                filtered_representation[key] = value
-            # Optionally handle other cases if needed
-
-        return filtered_representation
 class AuthTokenSerializer(serializers.Serializer):
     email = serializers.CharField()
     password = serializers.CharField(style={'input_type': 'password'}, trim_whitespace=False)

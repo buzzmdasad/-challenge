@@ -28,4 +28,4 @@ class ApplicantDetails(models.Model):
     applicant_email = models.CharField(max_length=255)
 
     def __str__(self):
-        return f'{self.applicant_name} - {self.job_title}'
+        return self.applicant_name - self.job_title

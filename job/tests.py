@@ -582,6 +582,7 @@ class JobTestCase(APITestCase):
         response = self.client.get('/myposts/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_content = response.content.decode('utf-8')
+        print('$$$$$'+response_content)
         self.assertJSONEqual(response_content, [{"id": 2, "job_title": "Full Stack Web Developer", "company": "IT Services",
         "description": "We are looking for talented web developer capable of developing highly demanding applications.Skills: Python, Django, MySQL, React, REST APIs, Angular and MongoDB.",
         "experience": "0 - 1 years", "work_location": "Bangalore", "employment_type": "Full Time", "qualification": "B.Tech/B.E. in Any Specialization",
@@ -600,6 +601,7 @@ class JobTestCase(APITestCase):
         response = self.client.get('/jobstatus/2')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_content = response.content.decode('utf-8')
+        print('????'+response_content)
         self.assertJSONEqual(response_content, [{"job_id": 2, "job_title": "Full Stack Web Developer", "company": "IT Services",
                                                  "applicant_id": 3, "applicant_name": "seeker", "applicant_email": "seeker@abc.com"},
                                                 {"job_id":2, "job_title": "Full Stack Web Developer", "company":"IT Services",
@@ -776,6 +778,7 @@ class JobTestCase(APITestCase):
         payload = {'openings': '1'}
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
         response = self.client.patch('/updatejob/1', data=payload, format='json')
+        print('++++'+str(response))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         response_content = response.content.decode('utf-8')
         self.assertJSONEqual(response_content, {"detail": "You do not have permission to perform this action."})
